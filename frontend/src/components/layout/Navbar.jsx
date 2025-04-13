@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { axiosInstance } from "../../lib/axios";
 import { getConnectionRequests } from "../../../../backend/controllers/connectionRequest_controller";
 import { Link } from 'react-router-dom'
@@ -6,7 +6,8 @@ import { Home, User, Users, Bell, LogOut } from "lucide-react";
 
 function Navbar() {
 
-    const { data: authUser, isLoading, error } = useQuery({ queryKey: ["authUser"] });
+    const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+    const queryClient = useQueryClient();
 
     const { data: notifications } = useQuery({
         queryKey: ["notifications"],
@@ -24,31 +25,40 @@ function Navbar() {
 
     const { mutate: logout } = useMutation({
         mutationFn: () => axiosInstance.post("/auth/logout"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["authUser"] });
+        }
 
     })
 
+    
     const unreadNotificationCount = notifications?.data
-        ? notifications.data.filter(notif => !notif.read).length
-        : 0
+        ? [notifications.data].filter((notif) => !notif.read).length
+        : 0;
+
     const unreadConnectionRequestCount = getConnectionRequests?.data?.length;
 
 
     return (
-        <nav className='bg-secondary shadow-md sticky top-0 z-10'>
+        <nav className='bg-white shadow-md sticky top-0 z-10'>
             <div className='max-w-7xl mx-auto px-4'>
                 <div className='flex justify-between items-center py-3'>
                     <div className='flex items-center space-x-4'>
+
                         <Link to='/'>
                             <img className='h-8 rounded' src='/small-logo.png' alt='LinkedIn' />
                         </Link>
+
                     </div>
                     <div className='flex items-center gap-2 md:gap-6'>
+
                         {authUser ? (
                             <>
                                 <Link to={"/"} className='text-neutral flex flex-col items-center'>
                                     <Home size={20} />
                                     <span className='text-xs hidden md:block'>Home</span>
                                 </Link>
+
                                 <Link to='/network' className='text-neutral flex flex-col items-center relative'>
                                     <Users size={20} />
                                     <span className='text-xs hidden md:block'>My Network</span>
@@ -61,6 +71,7 @@ function Navbar() {
                                         </span>
                                     )}
                                 </Link>
+
                                 <Link to='/notifications' className='text-neutral flex flex-col items-center relative'>
                                     <Bell size={20} />
                                     <span className='text-xs hidden md:block'>Notifications</span>
@@ -73,6 +84,7 @@ function Navbar() {
                                         </span>
                                     )}
                                 </Link>
+
                                 <Link
                                     to={`/profile/${authUser.username}`}
                                     className='text-neutral flex flex-col items-center'
@@ -80,6 +92,7 @@ function Navbar() {
                                     <User size={20} />
                                     <span className='text-xs hidden md:block'>Me</span>
                                 </Link>
+
                                 <button
                                     className='flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800'
                                     onClick={() => logout()}
@@ -90,7 +103,7 @@ function Navbar() {
                             </>
                         ) : (
                             <>
-                                <Link to='/login' className='btn btn-ghost'>
+                                <Link to='/login' className='btn btn-ghost text-black shadow-md'>
                                     Sign In
                                 </Link>
                                 <Link to='/signup' className='btn btn-primary'>
